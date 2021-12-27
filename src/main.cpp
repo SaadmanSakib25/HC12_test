@@ -8,7 +8,7 @@
 #define HC12_RX                 11
 #define LED                     9
 #define PUSH_BUTTON             2
-#define DEBOUNCE_TIME             500
+#define DEBOUNCE_TIME           500
 
 
 
@@ -97,56 +97,27 @@ void setup()
 
 	// delay(3000);
 	
-    char msg[MAX_MSG_SIZE], rcv_msg[MAX_MSG_SIZE];
+    char msg[MAX_MSG_SIZE];
     button_pressed = 0;
     // tic = millis();
 	while (1)
 	{
-        // while (!bPushButtonPressed());
-
-        if(button_pressed)
-        {
-            button_pressed = 0;
-            counter++;
-
-            char count[16];
-            itoa(counter, count, 10);
-            concat("Message count: ", count, msg);
-            Serial.println(msg);
-            vHC12Send(msg, HC12);
-        }
         
-		vHC12Receive(rcv_msg, MAX_MSG_SIZE, HC12);
+		vHC12Receive(msg, MAX_MSG_SIZE, HC12);
 
 		if(hc12_msg_rcv)
 		{
-            char return_msg[MAX_MSG_SIZE];
-            concat("Echo ", msg, return_msg);
-            Serial.println(rcv_msg);
-
-            if(!strcmp(return_msg, rcv_msg))
-            {
-                digitalWrite(LED, HIGH);
-                delay(250);
-                digitalWrite(LED, LOW);
-                delay(250);
-                digitalWrite(LED, HIGH);
-                delay(250);
-                digitalWrite(LED, LOW);
-                delay(250);
-            }
-            else
-            {
-                digitalWrite(LED, HIGH);
-                delay(1000);
-                digitalWrite(LED, LOW);
-            }
-			hc12_msg_rcv = false;
-
-            // delay(500);
-            // vHC12Send("Echo ", HC12);
-            // vHC12Send(msg, HC12);
-		}
+            digitalWrite(LED, HIGH);
+            delay(250);
+            digitalWrite(LED, LOW);
+            delay(250);
+            digitalWrite(LED, HIGH);
+            delay(250);
+            digitalWrite(LED, LOW);
+            delay(250);
+            Serial.println(msg);
+            hc12_msg_rcv = 0;
+        }
 	}
 	
 }
