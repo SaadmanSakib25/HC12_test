@@ -4,13 +4,21 @@
 
 #define DEBUG					true
 #define MAX_MSG_SIZE			128
+#define HC12_TX                 10
+#define HC12_RX                 11
+#define LED                     9
+#define PUSH_BUTTON             2
+#define DEBOUNCE_TIME             500
 
 
 
 bool hc12_msg_rcv = false;
+unsigned long tic;
+unsigned int counter = 0;
+bool button_pressed = 0;
+bool isr_started = false;
 
-
-SoftwareSerial HC12(10, 11);
+SoftwareSerial HC12(HC12_TX, HC12_RX);
 
 
 void vHC12Send(const char* msg, SoftwareSerial &HC12)
@@ -51,26 +59,93 @@ void vHC12Receive(char* buffer, uint16_t buffer_size, SoftwareSerial &HC12)
     buffer[i] = '\0'; 
 }
 
+
+void vPushButtonPressed()
+{
+    button_pressed = 1;
+}
+
+void concat(char str1[], char str2[], char buff[])
+{
+    int final_length = sizeof(str1) + sizeof(str2);
+    // Serial.println(final_length);
+
+    int i = 0, j = 0;
+
+    while(i < final_length)
+    {
+        while (str1[j] != '\0')
+        {
+            buff[i++] = str1[j++];
+        }
+        j = 0;
+        while (str2[j] != '\0')
+        {
+            buff[i++] = str2[j++];
+        }
+    }
+    buff[i] = '\0';
+}
+
 void setup() 
 {
+    pinMode(LED, OUTPUT);
+    pinMode(PUSH_BUTTON, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(PUSH_BUTTON), vPushButtonPressed, RISING);
 	Serial.begin(9600);
 	HC12.begin(9600);
 
-	delay(3000);
-
-	// vHC12Send("GID:8020211213001, DID:8021211213001, COMMAND: sleep_periodically, VALUE:0", HC12);
-	char msg[MAX_MSG_SIZE];
-
+	// delay(3000);
+	
+    char msg[MAX_MSG_SIZE], rcv_msg[MAX_MSG_SIZE];
+    button_pressed = 0;
+    // tic = millis();
 	while (1)
 	{
-		vHC12Receive(msg, MAX_MSG_SIZE, HC12);
+        // while (!bPushButtonPressed());
+
+        if(button_pressed)
+        {
+            button_pressed = 0;
+            counter++;
+
+            char count[16];
+            itoa(counter, count, 10);
+            concat("Message count: ", count, msg);
+            Serial.println(msg);
+            vHC12Send(msg, HC12);
+        }
+        
+		vHC12Receive(rcv_msg, MAX_MSG_SIZE, HC12);
 
 		if(hc12_msg_rcv)
 		{
-			Serial.println(msg);
-			vHC12Send("GID:8020211213001, DID:8021211213001, COMMAND: sleep_periodically, VALUE:10", HC12);
+            char return_msg[MAX_MSG_SIZE];
+            concat("Echo ", msg, return_msg);
+            Serial.println(rcv_msg);
+
+            if(!strcmp(return_msg, rcv_msg))
+            {
+                digitalWrite(LED, HIGH);
+                delay(250);
+                digitalWrite(LED, LOW);
+                delay(250);
+                digitalWrite(LED, HIGH);
+                delay(250);
+                digitalWrite(LED, LOW);
+                delay(250);
+            }
+            else
+            {
+                digitalWrite(LED, HIGH);
+                delay(1000);
+                digitalWrite(LED, LOW);
+            }
 			hc12_msg_rcv = false;
-			// break;
+
+            // delay(500);
+            // vHC12Send("Echo ", HC12);
+            // vHC12Send(msg, HC12);
 		}
 	}
 	
