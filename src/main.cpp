@@ -116,6 +116,8 @@ void setup()
             digitalWrite(LED, LOW);
             delay(250);
             Serial.println(msg);
+            HC12.write("Echo ");
+            HC12.write(msg);
             hc12_msg_rcv = 0;
         }
 	}
